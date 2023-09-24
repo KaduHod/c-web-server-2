@@ -5,17 +5,16 @@
 
 int main()
 {
-	int dominio = AF_INET;
+	int domain = AF_INET;
 	int socketTypeService = SOCK_STREAM;
-	int protocolo = 0; // Deixo para o sistema escolher o protocolo com base no dominio e tipo de socket, aparentemente ira ser o protocolo TCP/IP
+	int protocol = 0; // Deixo para o sistema escolher o protocol com base no domain e tipo de socket, aparentemente ira ser o protocol TCP/IP
 	u_long ipaddress = INADDR_ANY;// especifica que o sistema irá disponibiizar todos os ips associados a está maquina.
-	int port = 9998;
-	int tamanhoDeFilaDeConexoes = 10;
+	int port = 9999;
+	int conectionsQueueMaxSize = 10;
 
 	printf("Starting server at http://127.0.0.1:%i\n", port);
-	printf("Interface: %lu\n", ipaddress);
 	
-	struct Server server = serverConstructor(dominio, socketTypeService, protocolo, ipaddress, port, tamanhoDeFilaDeConexoes);
+	struct Server server = serverConstructor(domain, socketTypeService, protocol, ipaddress, port, conectionsQueueMaxSize);
 	
 	launch(&server);
 	

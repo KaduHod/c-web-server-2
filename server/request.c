@@ -6,67 +6,92 @@
 struct Request requestConstructor(int clientSocket) {
 	char route;
 	char httpMethod;
-	char body;
-	char requestBuffer[30000];
+	char body;	
+	char buffer[30000];
 	struct Request request;
 	
-	int readRequestStatus = getRequestInfo(clientSocket, requestBuffer);
+	memset(buffer, 0, sizeof(buffer));
+	
+	int readBytes = read(clientSocket, buffer, sizeof(buffer) - 1);
+	
+	strcpy(request.rawRequest, buffer);
 
-	printf("Request: %s\n", requestBuffer);
-/*
+	if(readBytes < 0)
+	{
+		perror("Erro lendo o requet: ");
+		close(clientSocket);
+	}
+
+	if(readBytes == 0)
+	{
+		printf("Cliente fechou a conexão");
+		close(clientSocket);
+	}
+
+
 	int count = 0;
 
-	char * line = strtok(requestBuffer, "\n");
+	char * line = strtok(buffer, "\n");
+	int nextIsBody = 0;
 
-	struct Request request;
-
-	while(line != NULL) 
+	while(line != NULL)
 	{
 		if(count == 0)
 		{
 			setHttpMethodAndRouteFromBuffer(&request, line);
 		}
+		if(nextIsBody == 1) {
+			request.body = line;	
+		}  
+
+		if(strcmp(line, "\0")){
+			nextIsBody = 1;
+		}
+
 		line = strtok(NULL, "\n");
 		count++;
+	
 	}
-*/
+
+	printf("Method: %s\n", request.httpMethod);
+	printf("Route: %s\n", request.route);
+	printf("Body: %s\n", request.body);
+	printf("Raw request: %s\n", request.rawRequest);
 	return request;
 }
 
 
 void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line)
 {
-	char metodo[64]; // Tamanho máximo para o método HTTP (ajuste conforme necessário)
-    	char rota[256]; // Tamanho máximo para a rota (ajuste conforme necessário)
-    	char versao[64]; // Tamanho máximo para a versão HTTP (ajuste conforme necessário)
+	char httpMethod[64]; // Tamanho máximo para o método HTTP (ajuste conforme necessário)
+    	char route[256]; // Tamanho máximo para a rota (ajuste conforme necessário)
 
-    // Use sscanf para analisar a linha de solicitação HTTP
-    	if (sscanf(line, "%s %s %s", metodo, rota, versao) != 3) {
+ 	// Use sscanf para analisar a linha de solicitação HTTP
+    	if (sscanf(line, "%s %s ", httpMethod, route) != 2) {
         // A linha de solicitação não está no formato esperado
         	printf("Erro ao analisar a linha de solicitação HTTP\n");
         	return;
     	}
+
+	request->httpMethod = httpMethod;
+	request->route = route;
 }
 
-int getRequestInfo(int clientSocket, char* buffer)
+void getRequestInfo(int clientSocket, char * buffer)
 {
-	memset(buffer, 0, sizeof(buffer));
-	int bytesLidos = read(clientSocket, buffer, sizeof(buffer) -1);
-
-	if(bytesLidos < 0)
+	int readBytes = read(clientSocket, buffer, sizeof(buffer) - 1);
+	if(readBytes < 0)
 	{
 		perror("Erro lendo o requet: ");
 		close(clientSocket);
-		return -1;
 	}
 
-	if(bytesLidos == 0)
+	if(readBytes == 0)
 	{
 		printf("Cliente fechou a conexão");
 		close(clientSocket);
-		return -1;
 	}
 
-	return 0;
+	return;
 }
 

@@ -2,15 +2,16 @@
 #define REQUEST_H
 
 struct Request {
-	char url;
-	char headers;
-	char body;
+	char * httpMethod;
+	char * route;
+	char * body;
+	char rawRequest[30000];
 };
 
-struct Request requestConstructor(int clientSocket);
+struct Request requestConstructor(int  clientSocket);
 
 void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line);
 
-int getRequestInfo(int clientSocket, char * buffer);
+void getRequestInfo(int clientSocket, char * buffer);
 
 #endif
