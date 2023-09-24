@@ -26,10 +26,7 @@ struct Server serverConstructor(
 	server.address.sin_family = domain;
 	server.address.sin_port = htons(port);
 	server.address.sin_addr.s_addr = htonl(interface);
-
 	server.socket = socket(domain, service, protocol);
-	
-	//printf("cod server.socket: %i\n", server.socket);
 
 	if(server.socket < 0)
 	{
@@ -38,7 +35,6 @@ struct Server serverConstructor(
 	}
 
 	int bindStatus = bind(server.socket, (struct sockaddr *) &server.address, sizeof(server.address)); 
-	//printf("cod bind status: %i\n", bindStatus);
 	
 	if(bindStatus < 0)
 	{
@@ -47,7 +43,6 @@ struct Server serverConstructor(
 	}	
 
 	int listenStatus = listen(server.socket, server.backlog);
-	//printf("cod listen status: %i\n", listenStatus);
 
 	if(listenStatus < 0) 
 	{
@@ -66,7 +61,6 @@ void launch(struct Server * server)
 	int newSocket;
 	while(1) {
 		newSocket = accept(server->socket, (struct sockaddr *)&server->address, (socklen_t *)&addressLength);
-	//	printf("new socket: %i\n", newSocket);
 		struct Request request = requestConstructor(newSocket);
 		write(newSocket, hello, strlen(hello));
 		close(newSocket); 
