@@ -25,21 +25,28 @@ struct Server serverConstructor(
 	server.address.sin_addr.s_addr = htonl(interface);
 
 	server.socket = socket(domain, service, protocol);
+	
+	printf("cod server.socket: %i\n", server.socket);
 
-
-	if(server.socket == -1)
+	if(server.socket < 0)
 	{
 		perror("Socket err:!");	
 		exit(1);
 	}
 
-	if(bind(server.socket, (struct sockaddr *) &server.address, sizeof(server.address)) == -1)
+	int bindStatus = bind(server.socket, (struct sockaddr *) &server.address, sizeof(server.address)); 
+	printf("cod bind status: %i\n", bindStatus);
+	
+	if(bindStatus < 0)
 	{
 		perror("Failed to bind socket...\n");
 		exit(1);
 	}	
 
-	if(listen(server.socket, server.backlog) == -1) 
+	int listenStatus = listen(server.socket, server.backlog);
+	printf("cod listen status: %i\n", listenStatus);
+
+	if(listenStatus < 0) 
 	{
 		perror("Failed to start listening!");
 		exit(1);
