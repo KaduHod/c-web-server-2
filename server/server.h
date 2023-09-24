@@ -14,7 +14,6 @@ struct Server
 	int backlog;
 	struct sockaddr_in address;
 	int socket;
-	void (*launch)(struct Server *server);
 };
 
 struct Server serverConstructor(
@@ -23,7 +22,10 @@ struct Server serverConstructor(
 	int protocol, 
 	u_long interface, 
 	int port, 
-	int backlog, 
-	void (*launch)(struct Server *server)
+	int backlog 
 );
+
+
+void launch(struct Server *server);
+
 #endif

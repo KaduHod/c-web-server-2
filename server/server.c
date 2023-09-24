@@ -1,6 +1,10 @@
 #include "server.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <request.h>
 
 struct Server serverConstructor(
 	int domain,
@@ -8,8 +12,7 @@ struct Server serverConstructor(
 	int protocol, 
 	u_long interface, 
 	int port, 
-	int backlog, 
-	void(*launch)(struct Server *server)
+	int backlog 
 ){
 	struct Server server;
 
@@ -54,3 +57,19 @@ struct Server serverConstructor(
 
 	return server;
 }
+
+void launch(struct Server * server) 
+{
+	char buffer[30000];
+ 	char *hello = "HTTP/1.1 200 OK\nDate: Mon, 27 Jul 2009 12:28:53 GMT\nServer: Apache/2.2.14(Win32)\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\nContent-Length:88\nContent-type:text/html\nConnection: Closed\n\n<html><body><h1>Hello,World!</h1></body></html>";
+	int addressLength = sizeof(server->address);
+	int newSocket;
+	while(1) {
+		newSocket = accept(server->socket, (struct sockaddr *)&server->address, (socklen_t *)&addressLength);
+		printf("new socket: %i\n", newSocket);
+		struct Request request = requestConstructor(newSocket);
+		write(newSocket, hello, strlen(hello));
+		close(newSocket); 
+	}
+}
+
