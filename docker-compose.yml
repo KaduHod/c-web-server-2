@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  c-container:
+    image: debian:latest 
+    build: .
+    container_name: web-server
+    working_dir: /app
+    volumes: 
+      - ./dist:/app
+    tty: true
