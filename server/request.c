@@ -14,7 +14,6 @@ struct Request requestConstructor(int clientSocket) {
 	
 	int readBytes = read(clientSocket, buffer, sizeof(buffer) - 1);
 	
-	strcpy(request.rawRequest, buffer);
 
 	if(readBytes < 0)
 	{
@@ -28,8 +27,8 @@ struct Request requestConstructor(int clientSocket) {
 		close(clientSocket);
 	}
 
-
-	int count = 0;
+	strcpy(request.rawRequest, buffer);
+	unsigned int count = 0;
 
 	char * line = strtok(buffer, "\n");
 	int nextIsBody = 0;
@@ -40,6 +39,7 @@ struct Request requestConstructor(int clientSocket) {
 		{
 			setHttpMethodAndRouteFromBuffer(&request, line);
 		}
+
 		if(nextIsBody == 1) {
 			request.body = line;	
 		}  
@@ -57,6 +57,7 @@ struct Request requestConstructor(int clientSocket) {
 	printf("Route: %s\n", request.route);
 	printf("Body: %s\n", request.body);
 	printf("Raw request: %s\n", request.rawRequest);
+
 	return request;
 }
 

@@ -22,7 +22,6 @@ struct Server serverConstructor(
 	server.interface = interface; 
 	server.port = port; 
 	server.backlog = backlog; 
-
 	server.address.sin_family = domain;
 	server.address.sin_port = htons(port);
 	server.address.sin_addr.s_addr = htonl(interface);
