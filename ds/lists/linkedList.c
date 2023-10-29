@@ -40,9 +40,6 @@ void pushNodeToList(struct LinkedList * list, void * data, int size)
 	}
 
 	Node * lastItem = list->get(list, list->length -1);
-	if(list->length == 1){
-		printf("teste %c\n", *(char*) data);
-	}
 	lastItem->next = nodeConstructor(data, size);
 	list->length++;
 }
