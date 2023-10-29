@@ -1,66 +1,123 @@
-#include <request.h>
+#include "request.h"
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "../ds/dictionary/dictionary.h"
 
-struct Request requestConstructor(int clientSocket) {
-	char route;
-	char httpMethod;
-	char body;	
-	char buffer[30000];
-	struct Request request;
-	
-	memset(buffer, 0, sizeof(buffer));
-	
-	int readBytes = read(clientSocket, buffer, sizeof(buffer) - 1);
-	
 
-	if(readBytes < 0)
-	{
+void readClientSocket(struct Request *req ,int clientSocket)
+{
+	memset(req->buffer, 0, sizeof(req->buffer));
+	int readBytes = read(clientSocket, req->buffer, sizeof(req->buffer) -1);
+
+	if(readBytes < 0) {
 		perror("Erro lendo o requet: ");
 		close(clientSocket);
 	}
 
-	if(readBytes == 0)
-	{
+	if(readBytes == 0) {
 		printf("Cliente fechou a conexão");
 		close(clientSocket);
 	}
 
-	strcpy(request.rawRequest, buffer);
-	unsigned int count = 0;
+	strcpy(req->rawRequest, req->buffer);
+}
 
-	char * line = strtok(buffer, "\n");
+struct Request requestConstructor(int clientSocket) 
+{
+	struct Request request;
+	request.buffer[30000];
+	request.fieldsList = linkedListConstructor();
+	request.setHeader = setHeader;
+	request.fields = dictionaryConstructor(compareStringKeys);
+	request.readClientSocket = readClientSocket;
+
+	request.readClientSocket(&request, clientSocket);
+	
 	int nextIsBody = 0;
 
+	char * line = strtok(request.buffer, "\n");
+	unsigned int count = 0;
 	while(line != NULL)
 	{
-		if(count == 0)
-		{
+		printf("\n");
+		printf("line: %s\n", line);
+		if(count == 0) {
 			setHttpMethodAndRouteFromBuffer(&request, line);
+			line = strtok(NULL, "\n");
+			count++;
+			continue;
 		}
 
 		if(nextIsBody == 1) {
-			request.body = line;	
+			request.body = line;
+			line = strtok(NULL, "\n");
+			count++;
+			nextIsBody = 0;
+			continue;
 		}  
 
-		if(strcmp(line, "\0")){
+
+		if(strlen(line) == 1){
 			nextIsBody = 1;
 		}
 
-		line = strtok(NULL, "\n");
+		// comecar a buscar os headers	
+		if(count == 0) {
+			count++;
+			line = strtok(NULL, "\n");
+			continue;
+		}
+
 		count++;
-	
+		char *key, *value;
+		char *lineCopy = strdup(line);
+		char *lineCopyTwo = strdup(line);
+		printf("copia: %s, %lu\n", lineCopyTwo, strlen(lineCopyTwo));
+		request.fieldsList.push(&request.fieldsList, &lineCopyTwo, sizeof(lineCopyTwo));
+
+		key = strsep(&lineCopy, ":");
+		value = lineCopy;	
+
+		printf("key: %s, value: %s \n", key, value);
+
+		if(strlen(key) == 0 || value == NULL) {
+			printf("pulando chave\n");
+			line = strtok(NULL, "\n");
+			continue;
+		}
+
+		request.fields.insert(&request.fields, key, sizeof(key), value, sizeof(value));
+
+		line = strtok(NULL, "\n");
 	}
 
-	printf("Method: %s\n", request.httpMethod);
-	printf("Route: %s\n", request.route);
-	printf("Body: %s\n", request.body);
-	printf("Raw request: %s\n", request.rawRequest);
+	char routeKey[] = "Route";
+	char MethodKey[] = "Method";
+	char HostKey[] = "Host";
+	char UserAgentKey[] = "User-Agent";
+	char ContenttypeKey[] = "Content-type";
+	char AuthorizationKey[] = "Authorization";
+
+	void * httpMethodVoid = request.fields.get(&request.fields, &MethodKey, sizeof(MethodKey));
+	void * routeVoid = request.fields.get(&request.fields, &routeKey, sizeof(routeKey));
+	void * hostVoid = request.fields.get(&request.fields, &HostKey, sizeof(HostKey));
+	void * userAgentVoid = request.fields.get(&request.fields, &UserAgentKey, sizeof(UserAgentKey));
+	void * contentTypeVoid = request.fields.get(&request.fields, &ContenttypeKey, sizeof(ContenttypeKey));
+	void * authorizationVoid = request.fields.get(&request.fields, &AuthorizationKey, sizeof(AuthorizationKey));
+
+	printf("Method: %s\n", (char*) httpMethodVoid); 
+	printf("Route: %s\n", (char*) routeVoid);
+	printf("Host: %s\n", (char*) hostVoid);
+//	printf("User-Agent: %s\n", (char*) userAgentVoid); 
+	//printf("Content-type: %s\n", (char*) contentTypeVoid);
+	//printf("Authorization: %s\n", (char*) authorizationVoid);
+	
+	request.fieldsList.print(&request.fieldsList);
 
 	return request;
 }
-
 
 void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line)
 {
@@ -68,31 +125,35 @@ void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line)
     	char route[256]; // Tamanho máximo para a rota (ajuste conforme necessário)
 
  	// Use sscanf para analisar a linha de solicitação HTTP
-    	if (sscanf(line, "%s %s ", httpMethod, route) != 2) {
+    	if (sscanf(line, "%s\n %s ", httpMethod, route) != 2) {
         // A linha de solicitação não está no formato esperado
         	printf("Erro ao analisar a linha de solicitação HTTP\n");
         	return;
     	}
 
-	request->httpMethod = httpMethod;
-	request->route = route;
+	// Nova forma de guardar valores
+	char httpMethodKey[] = "Method";
+	char routeKey[] = "Route";
+
+	request->fields.insert(&request->fields, &httpMethodKey, sizeof(httpMethodKey), &httpMethod, sizeof(httpMethod));
+	request->fields.insert(&request->fields, &routeKey, sizeof(routeKey), &route, sizeof(route));
+
+
 }
 
-void getRequestInfo(int clientSocket, char * buffer)
+
+struct Entry setHeader(struct Request *req, char *line) 
 {
-	int readBytes = read(clientSocket, buffer, sizeof(buffer) - 1);
-	if(readBytes < 0)
-	{
-		perror("Erro lendo o requet: ");
-		close(clientSocket);
-	}
+	char *lineCopy;
+	strcpy(lineCopy, line);
 
-	if(readBytes == 0)
-	{
-		printf("Cliente fechou a conexão");
-		close(clientSocket);
-	}
+	char *token = strsep(&lineCopy, ": ");
+	char *value = lineCopy;
 
-	return;
+	struct Entry entry = entryConstructor(token, sizeof(token), value, sizeof(value)); 
+
+	printf("Key: %s\n", (char*)entry.key);
+	printf("Value: %s\n", (char*)entry.value);
+
+	return entry;
 }
-
