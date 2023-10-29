@@ -4,7 +4,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <request.h>
+#include "request.h"
 
 struct Server serverConstructor(
 	int domain,
@@ -26,6 +26,7 @@ struct Server serverConstructor(
 	server.address.sin_port = htons(port);
 	server.address.sin_addr.s_addr = htonl(interface);
 	server.socket = socket(domain, service, protocol);
+	server.launch = launch;
 
 	if(server.socket < 0)
 	{
@@ -55,7 +56,7 @@ struct Server serverConstructor(
 void launch(struct Server * server) 
 {
 	char buffer[30000];
- 	char *hello = "HTTP/1.1 200 OK\nDate: Mon, 27 Jul 2009 12:28:53 GMT\nServer: Apache/2.2.14(Win32)\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\nContent-Length:88\nContent-type:text/html\nConnection: Closed\n\n<html><body><h1>Hello,World!</h1></body></html>";
+ 	char *hello = "HTTP/1.1 200 OK\nDate: Mon, 27 Jul 2009 12:28:53 GMT\nServer: Apache/2.2.14(Win32)\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\nContent-type:text/html\nConnection: Closed\n\n<html><body><h1>Hello,World!</h1></body></html>";
 	int addressLength = sizeof(server->address);
 	int newSocket;
 	while(1) {
@@ -63,6 +64,8 @@ void launch(struct Server * server)
 		struct Request request = requestConstructor(newSocket);
 		write(newSocket, hello, strlen(hello));
 		close(newSocket); 
+		close(server->socket);
+		exit(0);
 	}
 }
 
