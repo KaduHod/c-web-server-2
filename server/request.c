@@ -24,34 +24,22 @@ void readClientSocket(struct Request *req ,int clientSocket)
 	strcpy(req->rawRequest, req->buffer);
 }
 
-struct Request requestConstructor(int clientSocket) 
+void processRequest(struct Request *req)
 {
-	struct Request request;
-	request.buffer[30000];
-	request.fieldsList = linkedListConstructor();
-	request.setHeader = setHeader;
-	request.fields = dictionaryConstructor(compareStringKeys);
-	request.readClientSocket = readClientSocket;
-
-	request.readClientSocket(&request, clientSocket);
-	
 	int nextIsBody = 0;
+	int count = 0;
+	char *line = strtok(req->buffer, "\n");
 
-	char * line = strtok(request.buffer, "\n");
-	unsigned int count = 0;
-	while(line != NULL)
-	{
-		printf("\n");
-		printf("line: %s\n", line);
+	while(line != NULL) {
 		if(count == 0) {
-			setHttpMethodAndRouteFromBuffer(&request, line);
+			req->setMethodAndRoute(req, line);
 			line = strtok(NULL, "\n");
 			count++;
 			continue;
 		}
 
 		if(nextIsBody == 1) {
-			request.body = line;
+			req->body = line;
 			line = strtok(NULL, "\n");
 			count++;
 			nextIsBody = 0;
@@ -69,57 +57,28 @@ struct Request requestConstructor(int clientSocket)
 			line = strtok(NULL, "\n");
 			continue;
 		}
-
 		count++;
-		char *key, *value;
-		char *lineCopy = strdup(line);
-		char *lineCopyTwo = strdup(line);
-		printf("copia: %s, %lu\n", lineCopyTwo, strlen(lineCopyTwo));
-		request.fieldsList.push(&request.fieldsList, &lineCopyTwo, sizeof(lineCopyTwo));
 
-		key = strsep(&lineCopy, ":");
-		value = lineCopy;	
-
-		printf("key: %s, value: %s \n", key, value);
-
-		if(strlen(key) == 0 || value == NULL) {
-			printf("pulando chave\n");
-			line = strtok(NULL, "\n");
-			continue;
+		if(strlen(line) > 1) {
+			req->setHeader(req, line);
 		}
-
-		request.fields.insert(&request.fields, key, sizeof(key), value, sizeof(value));
 
 		line = strtok(NULL, "\n");
 	}
+}
 
-	char routeKey[] = "Route";
-	char MethodKey[] = "Method";
-	char HostKey[] = "Host";
-	char UserAgentKey[] = "User-Agent";
-	char ContenttypeKey[] = "Content-type";
-	char AuthorizationKey[] = "Authorization";
-
-	void * httpMethodVoid = request.fields.get(&request.fields, &MethodKey, sizeof(MethodKey));
-	void * routeVoid = request.fields.get(&request.fields, &routeKey, sizeof(routeKey));
-	void * hostVoid = request.fields.get(&request.fields, &HostKey, sizeof(HostKey));
-	void * userAgentVoid = request.fields.get(&request.fields, &UserAgentKey, sizeof(UserAgentKey));
-	void * contentTypeVoid = request.fields.get(&request.fields, &ContenttypeKey, sizeof(ContenttypeKey));
-	void * authorizationVoid = request.fields.get(&request.fields, &AuthorizationKey, sizeof(AuthorizationKey));
-
-	printf("Method: %s\n", (char*) httpMethodVoid); 
-	printf("Route: %s\n", (char*) routeVoid);
-	printf("Host: %s\n", (char*) hostVoid);
-//	printf("User-Agent: %s\n", (char*) userAgentVoid); 
-	//printf("Content-type: %s\n", (char*) contentTypeVoid);
-	//printf("Authorization: %s\n", (char*) authorizationVoid);
-	
-	request.fieldsList.print(&request.fieldsList);
-
+struct Request requestConstructor() 
+{
+	struct Request request;
+	request.setHeader = setHeader;
+	request.fields = dictionaryConstructor(compareStringKeys);
+	request.readClientSocket = readClientSocket;
+	request.setMethodAndRoute = setHttpMethodAndRouteFromBuffer;
+	request.process = processRequest;
 	return request;
 }
 
-void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line)
+void setHttpMethodAndRouteFromBuffer(struct Request *request, char *line)
 {
 	char httpMethod[64]; // Tamanho máximo para o método HTTP (ajuste conforme necessário)
     	char route[256]; // Tamanho máximo para a rota (ajuste conforme necessário)
@@ -141,19 +100,18 @@ void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line)
 
 }
 
-
-struct Entry setHeader(struct Request *req, char *line) 
+void setHeader(struct Request *req, char *line) 
 {
-	char *lineCopy;
-	strcpy(lineCopy, line);
+	char value[256];
+	char key[256];
 
-	char *token = strsep(&lineCopy, ": ");
-	char *value = lineCopy;
+	if(sscanf(line, "%s %s", key, value) != 2) {
+		printf("Erro ao analisar a linha!\n");
+		exit(1);
+	}
 
-	struct Entry entry = entryConstructor(token, sizeof(token), value, sizeof(value)); 
+	// retiro o caractere ":" do header
+	key[strlen(key) -1] = '\0';
 
-	printf("Key: %s\n", (char*)entry.key);
-	printf("Value: %s\n", (char*)entry.value);
-
-	return entry;
+	req->fields.insert(&req->fields, &key, sizeof(key), &value, sizeof(value));
 }

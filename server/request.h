@@ -8,19 +8,22 @@ struct Request {
 	char * body;
 	char buffer[30000];
 	char rawRequest[30000];
-	struct LinkedList fieldsList;
 	struct Dictionary fields;
-	struct Entry (*setHeader)(struct Request *req, char *line);
+	void (*setHeader)(struct Request *req, char *line);
 	void (*readClientSocket)(struct Request *req, int clientSocket);
+	void (*process)(struct Request *req);
+	void (*setMethodAndRoute)(struct Request *req, char *requestLine);
 };
 
-struct Request requestConstructor(int  clientSocket);
+struct Request requestConstructor();
 
-void setHttpMethodAndRouteFromBuffer(struct Request * request, char * line);
+void setHttpMethodAndRouteFromBuffer(struct Request *req, char *requestLine);
 
 void getRequestInfo(int clientSocket, char * buffer);
 
-struct Entry setHeader(struct Request *req, char *line);
+void processRequest(struct Request *req);
+
+void setHeader(struct Request *req, char *line);
 
 struct Entry getHeader(char str); 
 #endif
