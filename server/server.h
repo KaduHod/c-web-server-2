@@ -14,6 +14,7 @@ struct Server
 	int backlog;
 	struct sockaddr_in address;
 	int socket;
+	void (*launch)(struct Server * server);
 };
 
 struct Server serverConstructor(
