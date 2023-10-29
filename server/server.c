@@ -69,7 +69,6 @@ void launch(struct Server * server)
 		struct Response response = responseConstructor(newSocket);
 		response.send(&response);
 
-		close(newSocket); 
 		close(server->socket);
 		exit(0);
 	}
