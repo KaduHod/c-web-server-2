@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <server.h>
+#include "server/server.h"
 
 int main()
 {
@@ -16,7 +16,7 @@ int main()
 	
 	struct Server server = serverConstructor(domain, socketTypeService, protocol, ipaddress, port, conectionsQueueMaxSize);
 	
-	launch(&server);
+	server.launch(&server);
 	
 	return 0;
 }
